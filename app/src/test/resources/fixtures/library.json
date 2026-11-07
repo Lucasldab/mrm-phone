@@ -1,6 +1,6 @@
 [
   {"id":12,"title":"Solo Leveling: Ragnarok","source":"asura","status":"reading","pub_status":"ongoing",
-   "unread":3,"total":41,"cover":"/api/series/12/cover","failing":false,"note":null},
+   "unread":3,"total":41,"latest_release":"2026-11-06","cover":"/api/series/12/cover","failing":false,"note":null},
   {"id":7,"title":"Omniscient Reader","source":"mangadex","status":"up_to_date","pub_status":"completed",
    "unread":0,"total":203,"cover":"/api/series/7/cover","failing":true,"note":"502 upstream: cloudflare challenge"}
 ]

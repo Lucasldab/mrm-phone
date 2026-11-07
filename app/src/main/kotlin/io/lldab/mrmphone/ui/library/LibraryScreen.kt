@@ -53,7 +53,7 @@ import kotlinx.coroutines.launch
 data class LibraryState(
     val all: List<Series> = emptyList(),
     val query: String = "",
-    val sort: SortMode = SortMode.Title,
+    val sort: SortMode = SortMode.New,
     val loading: Boolean = false,
     val loadedOnce: Boolean = false,
     val offline: Boolean = false,

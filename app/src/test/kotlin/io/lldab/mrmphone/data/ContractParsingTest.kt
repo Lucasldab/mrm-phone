@@ -33,7 +33,10 @@ class ContractParsingTest {
         assertFalse(a.failing)
         assertNull(a.note)
         assertFalse(a.warn)
+        assertEquals("2026-11-06", a.latestRelease)
         val b = l[1]
+        // Absent on servers older than the field.
+        assertNull(b.latestRelease)
         assertTrue(b.failing)
         assertEquals("502 upstream: cloudflare challenge", b.note)
         assertTrue(b.warn)

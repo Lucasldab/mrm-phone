@@ -21,6 +21,8 @@ data class Series(
     val failing: Boolean = false,
     /** last_error while failing, else null. */
     val note: String? = null,
+    /** Release date (YYYY-MM-DD) of the newest dated chapter; null from older servers. */
+    @SerialName("latest_release") val latestRelease: String? = null,
 ) {
     /** The ⚠ marker in the library: failing, or the server left a note. */
     val warn: Boolean get() = failing || note != null

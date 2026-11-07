@@ -3,6 +3,7 @@ package io.lldab.mrmphone.ui
 import io.lldab.mrmphone.DeepLink
 import io.lldab.mrmphone.data.Series
 import io.lldab.mrmphone.ui.library.LibrarySort
+import io.lldab.mrmphone.ui.library.LibraryState
 import io.lldab.mrmphone.ui.library.SortMode
 import io.lldab.mrmphone.ui.reader.ReadRule
 import org.junit.Assert.assertEquals
@@ -75,8 +76,30 @@ class LibrarySortTest {
         assertEquals(listOf(4L), LibrarySort.apply(list, SortMode.Title, " delta ").map { it.id })
     }
 
-    @Test fun sort_cycles_like_the_tui() {
+    @Test fun sort_cycles_from_new_through_the_tui_modes() {
+        assertEquals(SortMode.Title, SortMode.New.next())
         assertEquals(SortMode.Unread, SortMode.Title.next())
-        assertEquals(SortMode.Title, SortMode.Status.next())
+        assertEquals(SortMode.New, SortMode.Status.next())
+    }
+
+    @Test fun new_sort_puts_unread_first_then_latest_release_then_title() {
+        fun r(id: Long, title: String, unread: Int, latest: String?) =
+            Series(id, title, "asura", "reading", "ongoing", unread, 10, "/c", false, null, latest)
+        val shelf = listOf(
+            r(1, "old unread", 1, "2026-09-01"),
+            r(2, "new, all read", 0, "2026-11-07"),
+            r(3, "new unread", 4, "2026-11-06"),
+            r(4, "undated unread", 2, null),
+            r(5, "b same day", 1, "2026-11-06"),
+            r(6, "undated read", 0, null),
+        )
+        assertEquals(
+            listOf(5L, 3L, 1L, 4L, 2L, 6L),
+            LibrarySort.apply(shelf, SortMode.New, "").map { it.id },
+        )
+    }
+
+    @Test fun library_starts_on_the_new_sort() {
+        assertEquals(SortMode.New, LibraryState().sort)
     }
 }
