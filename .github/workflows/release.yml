@@ -60,11 +60,12 @@ jobs:
         run: |
           APK=$(find app/build/outputs/apk/release -name '*.apk' | head -1)
           echo "apk: $APK"
-          # Newest build-tools only: the runner image ships several, and the
-          # bare glob expanded to two apksigner paths ("Unsupported command").
-          SIGNER="$(ls -d "$ANDROID_HOME"/build-tools/*/ | sort -V | tail -1)apksigner"
-          "$SIGNER" verify --print-certs "$APK" \
-            | grep -i 'signer #1 certificate' || { echo "::error::APK is not signed"; exit 1; }
+          # One apksigner, the build's own build-tools (36.0.0) when present:
+          # the runner ships several and a bare glob expanded to two paths.
+          BT="$ANDROID_HOME/build-tools/36.0.0"
+          [ -x "$BT/apksigner" ] || BT="$(ls -d "$ANDROID_HOME"/build-tools/*/ | sort -V | tail -1)"
+          "$BT/apksigner" verify --print-certs "$APK" 2>&1 | tee "$RUNNER_TEMP/certs.txt"
+          grep -qi 'signer #1 certificate' "$RUNNER_TEMP/certs.txt" || { echo "::error::APK is not signed"; exit 1; }
 
       - name: Attach to the release
         uses: softprops/action-gh-release@v3
