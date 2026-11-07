@@ -1,8 +1,8 @@
 # mrm-phone
 
 Android reader for the shared [mrm](https://github.com/Lucasldab/mrm) library.
-Talks only to `mrm serve` on hearth over the tailnet; marking a chapter read
-here is the same DB write as mrm's TUI.
+Talks only to `mrm serve` on your server, for example over a private network
+like a tailnet; marking a chapter read here is the same DB write as mrm's TUI.
 
 - Library grid, series detail (status, read/unread on long-press, refresh),
   vertical webtoon reader (pinch / double-tap zoom, keeps the screen on),
@@ -13,7 +13,8 @@ here is the same DB write as mrm's TUI.
   returns; the next 2 unread chapters are prefetched into the app cache
   (500 MB cap by default, read chapters evicted first).
 - Deep links: `mrmphone://series/{id}`, `mrmphone://library` (ntfy taps).
-- Cleartext HTTP is allowed only for `hearth.tailda34b8.ts.net`.
+- Cleartext HTTP is allowed only for the one server host named in
+  `app/src/main/res/xml/network_security_config.xml`.
 
 Package `io.lldab.mrmphone`. Look and build setup follow nocturne's phone app.
 
@@ -22,12 +23,12 @@ Package `io.lldab.mrmphone`. Look and build setup follow nocturne's phone app.
     ./gradlew :app:testDebugUnitTest
     ./gradlew :app:assembleDebug
 
-Release signing reads `MRM_PHONE_KEYSTORE` (default
-`~/keystore/nocturne-release.jks`), `MRM_PHONE_KEYSTORE_PASSWORD`,
-`MRM_PHONE_KEY_ALIAS` (default `nocturne`) and `MRM_PHONE_KEY_PASSWORD`
-(default: the store password):
+Release signing reads `MRM_PHONE_KEYSTORE` (path to the `.jks`),
+`MRM_PHONE_KEYSTORE_PASSWORD`, `MRM_PHONE_KEY_ALIAS` and
+`MRM_PHONE_KEY_PASSWORD` (default: the store password):
 
-    MRM_PHONE_KEYSTORE_PASSWORD="$(cat ~/keystore/nocturne-keystore-password)" \
+    MRM_PHONE_KEYSTORE=/path/to/release.jks \
+    MRM_PHONE_KEYSTORE_PASSWORD="$(cat /path/to/keystore-password)" \
       ./gradlew :app:assembleRelease
 
 Releases: push a `v*` tag; `.github/workflows/release.yml` builds the signed
@@ -35,5 +36,5 @@ APK (secrets `KEYSTORE_BASE64`, `KEYSTORE_PASSWORD`) and attaches it.
 
 ## Setup on the phone
 
-Settings → server URL (default `http://hearth.tailda34b8.ts.net:8102`) and the
-token from hearth's `~/.config/mrm/serve_token`, then "test connection".
+Settings → server URL (the address of `mrm serve`, port 8102 by default) and
+the token from the server's `~/.config/mrm/serve_token`, then "test connection".
