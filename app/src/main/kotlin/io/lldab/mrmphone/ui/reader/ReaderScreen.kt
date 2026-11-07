@@ -1,5 +1,8 @@
 package io.lldab.mrmphone.ui.reader
 
+import androidx.compose.animation.AnimatedVisibility
+import androidx.compose.animation.slideInVertically
+import androidx.compose.animation.slideOutVertically
 import androidx.compose.foundation.background
 import androidx.compose.foundation.gestures.awaitEachGesture
 import androidx.compose.foundation.gestures.awaitFirstDown
@@ -36,12 +39,17 @@ import androidx.compose.runtime.mutableFloatStateOf
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.mutableStateSetOf
+import androidx.compose.runtime.rememberUpdatedState
 import androidx.compose.runtime.setValue
 import androidx.compose.runtime.snapshotFlow
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.TransformOrigin
+import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.graphics.graphicsLayer
+import androidx.compose.ui.input.nestedscroll.NestedScrollConnection
+import androidx.compose.ui.input.nestedscroll.NestedScrollSource
+import androidx.compose.ui.input.nestedscroll.nestedScroll
 import androidx.compose.ui.input.pointer.PointerEventPass
 import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.ui.layout.ContentScale
@@ -157,6 +165,7 @@ fun ReaderScreen(vm: ReaderViewModel, onBack: () -> Unit, onChapter: (Long) -> U
             else -> PageStrip(
                 pages = state.pages,
                 onTap = { barVisible = !barVisible },
+                onScrollDown = { barVisible = false },
                 onLastPageSeen = vm::onLastPageSeen,
                 content = {
                     Column(
@@ -177,7 +186,11 @@ fun ReaderScreen(vm: ReaderViewModel, onBack: () -> Unit, onChapter: (Long) -> U
             )
         }
 
-        if (barVisible) {
+        AnimatedVisibility(
+            visible = barVisible,
+            enter = slideInVertically { -it },
+            exit = slideOutVertically { -it },
+        ) {
             Row(
                 Modifier
                     .fillMaxWidth()
@@ -217,16 +230,28 @@ private fun BarText(text: String, enabled: Boolean, onClick: () -> Unit) {
 /**
  * Continuous vertical strip. Pinch zooms (1–4x) the whole strip around the
  * gesture, a two-finger drag pans, double tap toggles 2x, single tap toggles
- * the bar. While zoomed, one-finger drags still scroll the list vertically and
- * move the strip sideways.
+ * the bar, and scrolling down hides it. While zoomed, one-finger drags still
+ * scroll the list vertically and move the strip sideways.
  */
 @Composable
 private fun PageStrip(
     pages: List<PageRef>,
     onTap: () -> Unit,
+    onScrollDown: () -> Unit,
     onLastPageSeen: () -> Unit,
     content: @Composable () -> Unit,
 ) {
+    val currentOnScrollDown by rememberUpdatedState(onScrollDown)
+    // Uses what the list consumed, so pulling at the end of the chapter does
+    // not hide a bar the reader just tapped open.
+    val hideOnScroll = remember {
+        object : NestedScrollConnection {
+            override fun onPostScroll(consumed: Offset, available: Offset, source: NestedScrollSource): Offset {
+                if (consumed.y < 0f) currentOnScrollDown()
+                return Offset.Zero
+            }
+        }
+    }
     val listState = rememberLazyListState()
     val loaded = remember { mutableStateSetOf<Int>() }
     var scale by remember { mutableFloatStateOf(1f) }
@@ -256,6 +281,7 @@ private fun PageStrip(
         Modifier
             .fillMaxSize()
             .onSizeChanged { width = it.width.toFloat() }
+            .nestedScroll(hideOnScroll)
             .pointerInput(Unit) {
                 awaitEachGesture {
                     awaitFirstDown(requireUnconsumed = false, pass = PointerEventPass.Initial)
