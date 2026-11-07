@@ -1,0 +1,16 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!--
+  mrm: a vertical strip of three stacked panels (a webtoon page column)
+  with a terminal cursor block beside it, in nocturne's purple.
+  Drawn inside the 72x72 safe zone of the 108x108 adaptive canvas.
+-->
+<vector xmlns:android="http://schemas.android.com/apk/res/android"
+    android:width="108dp"
+    android:height="108dp"
+    android:viewportWidth="108"
+    android:viewportHeight="108">
+    <path android:fillColor="#8C41B4" android:fillAlpha="0.95" android:pathData="M38,30 h22 v14 h-22 z" />
+    <path android:fillColor="#8C41B4" android:fillAlpha="0.75" android:pathData="M38,47 h22 v14 h-22 z" />
+    <path android:fillColor="#8C41B4" android:fillAlpha="0.55" android:pathData="M38,64 h22 v14 h-22 z" />
+    <path android:fillColor="#E0E0E0" android:pathData="M64,70 h6 v8 h-6 z" />
+</vector>

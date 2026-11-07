@@ -1,0 +1,12 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!--
+  Cleartext only to hearth over the tailnet: tailscale serve (tcp 8102)
+  carries plain HTTP inside WireGuard, so the traffic is encrypted on the
+  wire even though the scheme is http. Everything else must be HTTPS.
+-->
+<network-security-config>
+    <base-config cleartextTrafficPermitted="false" />
+    <domain-config cleartextTrafficPermitted="true">
+        <domain includeSubdomains="false">hearth.tailda34b8.ts.net</domain>
+    </domain-config>
+</network-security-config>

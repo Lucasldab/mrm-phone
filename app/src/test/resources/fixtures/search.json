@@ -1,0 +1,5 @@
+{"hits":[
+   {"title":"Solo Leveling","source":"asura","source_url":"https://asuracomic.net/series/solo-leveling","pub_status":"completed","cover_url":"https://gg.asuracomic.net/storage/media/1/cover.webp"},
+   {"title":"Solo Leveling","source":"mangadex","source_url":"https://mangadex.org/title/32d76d19","pub_status":"completed","cover_url":null}
+ ],
+ "errors":["mangack: 502 upstream timeout"]}

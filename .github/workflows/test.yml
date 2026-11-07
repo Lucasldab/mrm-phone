@@ -1,0 +1,47 @@
+# Run the app's JVM unit tests.
+#
+# Called two ways:
+#   - directly, on every push to main and every pull request
+#   - via workflow_call from release.yml, which gates the APK build on it
+#
+# Needs no secrets: unit tests never touch the keystore.
+
+name: Unit tests
+
+on:
+  push:
+    branches: ["main"]
+  pull_request:
+  workflow_call:
+  workflow_dispatch:
+
+jobs:
+  unit-tests:
+    runs-on: ubuntu-latest
+
+    steps:
+      - uses: actions/checkout@v7
+
+      # Must match release.yml. AGP 8.13 supports JDK 17/21, NOT 26.
+      - uses: actions/setup-java@v6
+        with:
+          distribution: temurin
+          java-version: "21"
+
+      # packages: '' because the action's default ('tools platform-tools')
+      # installs the withdrawn SDK `tools` package and sdkmanager exits 1.
+      # AGP downloads the platform and build-tools it needs.
+      - uses: android-actions/setup-android@v4
+        with:
+          packages: ''
+
+      - name: Run unit tests
+        run: ./gradlew :app:testDebugUnitTest --no-daemon --stacktrace
+
+      - name: Upload test report
+        if: always()
+        uses: actions/upload-artifact@v7
+        with:
+          name: unit-test-report
+          path: app/build/reports/tests/testDebugUnitTest
+          if-no-files-found: warn

@@ -1,0 +1,9 @@
+{"id":12,"title":"Solo Leveling: Ragnarok","source":"asura","status":"reading","pub_status":"ongoing",
+ "unread":2,"total":4,"cover":"/api/series/12/cover","failing":false,"note":null,
+ "description":"Suho, son of the Shadow Monarch.",
+ "chapters":[
+   {"id":101,"number":1.0,"title":"Prologue","released_at":"2024-08-01T00:00:00Z","read":true},
+   {"id":102,"number":2,"title":null,"released_at":null,"read":true},
+   {"id":103,"number":2.5,"title":"Side story","released_at":"2024-08-15T00:00:00Z","read":false},
+   {"id":104,"number":3.0,"title":null,"released_at":"2024-08-22","read":false}
+ ]}
