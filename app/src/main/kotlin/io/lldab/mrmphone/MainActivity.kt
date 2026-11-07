@@ -2,6 +2,7 @@ package io.lldab.mrmphone
 
 import android.content.Intent
 import android.os.Bundle
+import android.view.View
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
 import androidx.activity.enableEdgeToEdge
@@ -16,6 +17,9 @@ class MainActivity : ComponentActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
         enableEdgeToEdge()
         super.onCreate(savedInstanceState)
+        // Nothing here should be autofilled: password managers otherwise offer
+        // to save the server token as a login (Bitwarden did, 2026-11-07).
+        window.decorView.importantForAutofill = View.IMPORTANT_FOR_AUTOFILL_NO_EXCLUDE_DESCENDANTS
         if (savedInstanceState == null) pendingLink.value = DeepLink.parse(intent?.dataString)
         val app = application as MrmApp
         setContent {
