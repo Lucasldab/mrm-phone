@@ -231,7 +231,8 @@ private fun BarText(text: String, enabled: Boolean, onClick: () -> Unit) {
  * Continuous vertical strip. Pinch zooms (1–4x) the whole strip around the
  * gesture, a two-finger drag pans, double tap toggles 2x, single tap toggles
  * the bar, and scrolling down hides it. While zoomed, one-finger drags still
- * scroll the list vertically and move the strip sideways.
+ * scroll the list vertically and move the strip sideways. Quick repeated
+ * flings in one direction speed up ([FlingBoost]).
  */
 @Composable
 private fun PageStrip(
@@ -314,6 +315,7 @@ private fun PageStrip(
     ) {
         LazyColumn(
             state = listState,
+            flingBehavior = rememberBoostedFlingBehavior(),
             modifier = Modifier
                 .fillMaxSize()
                 .graphicsLayer {
