@@ -19,6 +19,10 @@ class ResponseCache(private val dir: File) {
     }
 
     fun get(name: String): String? = File(dir, name).takeIf { it.isFile }?.readText()
+
+    fun remove(name: String) {
+        File(dir, name).delete()
+    }
 }
 
 /** One page of a chapter for the reader: a cached [File] or a server URL. */
@@ -76,6 +80,22 @@ class Repository(
     }
 
     suspend fun setStatus(id: Long, status: String): Series = api.setStatus(id, status)
+
+    /**
+     * Delete a series on the server, then drop what the phone holds for it:
+     * the offline copy, prefetched pages and queued read marks. Online only:
+     * an offline failure throws and leaves everything in place.
+     */
+    suspend fun deleteSeries(detail: SeriesDetail) = withContext(Dispatchers.IO) {
+        api.deleteSeries(detail.id)
+        responses.remove("series-${detail.id}.json")
+        val chapterIds = detail.chapters.map { it.id }.toSet()
+        chapterIds.forEach { queue.removeChapter(it) }
+        pageCache.entries()
+            .map { it.chapterId }
+            .filter { it in chapterIds || pageCache.meta(it)?.seriesId == detail.id }
+            .forEach { pageCache.delete(it) }
+    }
 
     /**
      * Mark a chapter read/unread. Online: the server's answer (fresh Series).
