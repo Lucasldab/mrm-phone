@@ -89,6 +89,13 @@ data class ReadResponse(
 )
 
 @Serializable
+data class ReadThroughResponse(
+    @SerialName("chapter_id") val chapterId: Long,
+    val marked: Int,
+    val series: Series,
+)
+
+@Serializable
 data class PagesResponse(
     @SerialName("chapter_id") val chapterId: Long,
     val pages: List<String>,
