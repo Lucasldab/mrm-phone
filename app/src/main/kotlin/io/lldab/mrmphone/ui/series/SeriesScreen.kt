@@ -20,12 +20,15 @@ import androidx.compose.foundation.layout.windowInsetsBottomHeight
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.Delete
 import androidx.compose.material.icons.filled.Refresh
+import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.DropdownMenu
 import androidx.compose.material3.DropdownMenuItem
 import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
+import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
@@ -65,6 +68,7 @@ data class SeriesState(
     val detail: SeriesDetail? = null,
     val loading: Boolean = false,
     val refreshing: Boolean = false,
+    val deleting: Boolean = false,
     val offline: Boolean = false,
     val error: String? = null,
     val message: String? = null,
@@ -124,6 +128,21 @@ class SeriesViewModel(private val c: AppContainer, val id: Long) : ViewModel() {
         }
     }
 
+    /** Remove the series from the library (TUI `d`), then [onDone]. */
+    fun delete(onDone: () -> Unit) {
+        val d = _state.value.detail ?: return
+        if (_state.value.deleting) return
+        _state.update { it.copy(deleting = true, message = "deleting…") }
+        viewModelScope.launch {
+            try {
+                c.repository.deleteSeries(d)
+                onDone()
+            } catch (e: Exception) {
+                _state.update { it.copy(deleting = false, message = "! ${errorText(e)}") }
+            }
+        }
+    }
+
     fun toggleRead(ch: Chapter) {
         val target = !ch.read
         // Optimistic: flip it now, the server (or the queue) catches up.
@@ -155,10 +174,22 @@ fun SeriesScreen(vm: SeriesViewModel, onBack: () -> Unit, onRead: (Long) -> Unit
     val state by vm.state.collectAsStateWithLifecycle()
     LaunchedEffect(Unit) { vm.load() }
     val d = state.detail
+    var confirmDelete by remember { mutableStateOf(false) }
+
+    if (confirmDelete && d != null) {
+        DeleteDialog(
+            title = d.title,
+            onConfirm = { confirmDelete = false; vm.delete(onDone = onBack) },
+            onDismiss = { confirmDelete = false },
+        )
+    }
 
     Column(Modifier.fillMaxSize().background(MaterialTheme.colorScheme.background)) {
         MrmTopBar(title = d?.title ?: "…", onBack = onBack) {
             BarIcon(Icons.Default.Refresh, "refresh from source") { vm.refresh() }
+            if (d != null && !state.deleting) {
+                BarIcon(Icons.Default.Delete, "delete from library") { confirmDelete = true }
+            }
         }
         state.message?.let { Hint(it, Modifier.padding(horizontal = 12.dp, vertical = 4.dp)) }
         if (state.offline) Hint("offline · showing the last copy", Modifier.padding(horizontal = 12.dp))
@@ -258,6 +289,31 @@ private fun Header(d: SeriesDetail, vm: SeriesViewModel, firstUnread: Chapter?, 
 }
 
 private fun SeriesDetail.warn() = failing || note != null
+
+@Composable
+private fun DeleteDialog(title: String, onConfirm: () -> Unit, onDismiss: () -> Unit) {
+    val c = MaterialTheme.colorScheme
+    AlertDialog(
+        onDismissRequest = onDismiss,
+        shape = RectangleShape,
+        containerColor = c.surfaceVariant,
+        title = { Text("delete series?", style = MaterialTheme.typography.titleLarge, color = c.onBackground) },
+        text = {
+            Text(
+                "$title leaves the library, with its chapters and read history. " +
+                    "Adding it again starts from scratch.",
+                style = MaterialTheme.typography.bodyMedium,
+                color = c.onSurface,
+            )
+        },
+        confirmButton = {
+            TextButton(onClick = onConfirm) { Text("delete", color = c.error) }
+        },
+        dismissButton = {
+            TextButton(onClick = onDismiss) { Text("cancel", color = c.onSurfaceVariant) }
+        },
+    )
+}
 
 @Composable
 private fun Meta(key: String, value: String) {

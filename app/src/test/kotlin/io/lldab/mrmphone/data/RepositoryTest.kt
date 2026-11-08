@@ -6,7 +6,9 @@ import okhttp3.mockwebserver.MockResponse
 import okhttp3.mockwebserver.MockWebServer
 import org.junit.After
 import org.junit.Assert.assertEquals
+import org.junit.Assert.assertFalse
 import org.junit.Assert.assertNull
+import org.junit.Assert.assertThrows
 import org.junit.Assert.assertTrue
 import org.junit.Before
 import org.junit.Rule
@@ -95,5 +97,37 @@ class RepositoryTest {
         server.enqueue(json("pages.json"))
         val pages = repo.pages(103)
         assertEquals(settings.serverUrl + "/api/chapters/103/pages/0", pages[0].model)
+    }
+
+    @Test fun delete_series_clears_its_local_state_only() = runTest {
+        server.enqueue(json("series_detail.json"))
+        val d = repo.series(12).value
+        repo.queue.enqueue(104, true)
+        repo.pageCache.writeMeta(PageCache.Meta(103, seriesId = 12, pageCount = 1, complete = true))
+        repo.pageCache.writePage(103, 0, "p".toByteArray())
+        repo.pageCache.writeMeta(PageCache.Meta(900, seriesId = 99, pageCount = 1, complete = true))
+        repo.pageCache.writePage(900, 0, "q".toByteArray())
+
+        server.enqueue(MockResponse().setResponseCode(204))
+        repo.deleteSeries(d)
+
+        val req = server.let { it.takeRequest(); it.takeRequest() }
+        assertEquals("DELETE", req.method)
+        assertEquals("/api/series/12", req.path)
+        assertTrue(repo.queue.isEmpty())
+        assertFalse(repo.pageCache.isComplete(103))
+        assertTrue("other series keeps its pages", repo.pageCache.isComplete(900))
+        server.shutdown()
+        assertThrows(java.io.IOException::class.java) { kotlinx.coroutines.runBlocking { repo.series(12) } }
+    }
+
+    @Test fun delete_series_offline_fails_and_keeps_everything() = runTest {
+        server.enqueue(json("series_detail.json"))
+        val d = repo.series(12).value
+        repo.queue.enqueue(104, true)
+        server.shutdown()
+        assertThrows(java.io.IOException::class.java) { kotlinx.coroutines.runBlocking { repo.deleteSeries(d) } }
+        assertFalse(repo.queue.isEmpty())
+        assertTrue(repo.series(12).offline)
     }
 }

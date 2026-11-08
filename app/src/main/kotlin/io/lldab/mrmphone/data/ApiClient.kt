@@ -83,6 +83,13 @@ class ApiClient(
     suspend fun addSeries(source: String, sourceUrl: String): SeriesDetail =
         post("/api/series", body(AddSeriesRequest(source, sourceUrl), AddSeriesRequest.serializer()), SeriesDetail.serializer())
 
+    /** Remove a series from the library (TUI `d`); its chapters go with it. */
+    suspend fun deleteSeries(id: Long): Unit = withContext(Dispatchers.IO) {
+        http.newCall(Request.Builder().url(url("/api/series/$id")).delete().build()).execute().use { r ->
+            if (!r.isSuccessful) throw errorOf(r)
+        }
+    }
+
     /** Raw bytes of a server path (page image), for prefetch. */
     suspend fun bytes(path: String): ByteArray = withContext(Dispatchers.IO) {
         http.newCall(Request.Builder().url(url(path)).get().build()).execute().use { r ->
