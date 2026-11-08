@@ -59,6 +59,15 @@ class ApiClientTest {
         assertEquals("""{"read":true}""", req.body.readUtf8())
     }
 
+    @Test fun mark_read_through_posts_to_the_chapter() = runTest {
+        server.enqueue(json("read_through_response.json"))
+        val r = api.markReadThrough(103)
+        assertEquals(3, r.marked)
+        val req = server.takeRequest()
+        assertEquals("POST", req.method)
+        assertEquals("/api/chapters/103/read-through", req.path)
+    }
+
     @Test fun set_status_and_add_series_bodies() = runTest {
         server.enqueue(json("series.json"))
         server.enqueue(json("series_detail.json"))

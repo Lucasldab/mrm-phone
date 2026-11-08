@@ -77,6 +77,13 @@ class ContractParsingTest {
         assertEquals(1, r.series.unread)
     }
 
+    @Test fun read_through_response_carries_count_and_fresh_series() {
+        val r = parse(ReadThroughResponse.serializer(), "read_through_response.json")
+        assertEquals(103L, r.chapterId)
+        assertEquals(3, r.marked)
+        assertEquals(1, r.series.unread)
+    }
+
     @Test fun pages_response() {
         val p = parse(PagesResponse.serializer(), "pages.json")
         assertEquals(103L, p.chapterId)

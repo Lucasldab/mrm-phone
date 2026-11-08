@@ -61,6 +61,46 @@ class RepositoryTest {
         assertTrue(repo.queue.isEmpty())
     }
 
+    @Test fun read_through_clears_queued_marks_up_to_the_chapter_only() = runTest {
+        server.enqueue(json("series_detail.json"))
+        val d = repo.series(12).value
+        repo.queue.enqueue(102, false)
+        repo.queue.enqueue(104, false)
+
+        server.enqueue(json("read_through_response.json"))
+        val r = repo.markReadThrough(d, d.chapters.first { it.id == 103L })
+
+        assertEquals(3, r.marked)
+        assertEquals(listOf(104L), repo.queue.pending().map { it.chapterId })
+    }
+
+    @Test fun read_through_marks_prefetched_copies_up_to_the_chapter_only() = runTest {
+        server.enqueue(json("series_detail.json"))
+        val d = repo.series(12).value
+        repo.pageCache.writeMeta(PageCache.Meta(102, seriesId = 12, pageCount = 1, complete = true, read = false))
+        repo.pageCache.writeMeta(PageCache.Meta(104, seriesId = 12, pageCount = 1, complete = true, read = false))
+
+        server.enqueue(json("read_through_response.json"))
+        repo.markReadThrough(d, d.chapters.first { it.id == 103L })
+
+        assertTrue(repo.pageCache.meta(102)!!.read)
+        assertFalse(repo.pageCache.meta(104)!!.read)
+    }
+
+    @Test fun read_through_offline_fails_and_queues_nothing() = runTest {
+        server.enqueue(json("series_detail.json"))
+        val d = repo.series(12).value
+        repo.queue.enqueue(102, false)
+        server.shutdown()
+
+        assertThrows(java.io.IOException::class.java) {
+            kotlinx.coroutines.runBlocking { repo.markReadThrough(d, d.chapters.first { it.id == 103L }) }
+        }
+
+        assertEquals(listOf(102L to false), repo.queue.pending().map { it.chapterId to it.read })
+        assertTrue(scheduled.isEmpty())
+    }
+
     @Test fun series_falls_back_to_last_copy_offline_with_queue_overlay() = runTest {
         server.enqueue(json("series_detail.json"))
         assertEquals(false, repo.series(12).offline)

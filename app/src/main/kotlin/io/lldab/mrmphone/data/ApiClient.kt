@@ -70,6 +70,10 @@ class ApiClient(
     suspend fun markRead(chapterId: Long, read: Boolean): ReadResponse =
         post("/api/chapters/$chapterId/read", body(ReadRequest(read), ReadRequest.serializer()), ReadResponse.serializer())
 
+    /** Mark every chapter numbered up to this one read. */
+    suspend fun markReadThrough(chapterId: Long): ReadThroughResponse =
+        post("/api/chapters/$chapterId/read-through", ByteArray(0).toRequestBody(null), ReadThroughResponse.serializer())
+
     suspend fun pages(chapterId: Long): PagesResponse =
         get("/api/chapters/$chapterId/pages", PagesResponse.serializer())
 

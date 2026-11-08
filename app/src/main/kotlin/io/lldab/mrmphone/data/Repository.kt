@@ -116,6 +116,22 @@ class Repository(
         }
     }
 
+    /**
+     * Mark every chapter of [detail] up to [chapter] read. Online only: an
+     * offline failure throws and queues nothing, since the queue is per
+     * chapter. On success, queued marks for those chapters are dropped so a
+     * stale "unread" cannot undo this.
+     */
+    suspend fun markReadThrough(detail: SeriesDetail, chapter: Chapter): ReadThroughResponse =
+        withContext(Dispatchers.IO) {
+            val r = api.markReadThrough(chapter.id)
+            detail.chapters.filter { it.number <= chapter.number }.forEach {
+                queue.removeChapter(it.id)
+                pageCache.setRead(it.id, true)
+            }
+            r
+        }
+
     /** Pages for the reader, preferring prefetched files. */
     suspend fun pages(chapterId: Long): List<PageRef> = withContext(Dispatchers.IO) {
         pageCache.touch(chapterId)

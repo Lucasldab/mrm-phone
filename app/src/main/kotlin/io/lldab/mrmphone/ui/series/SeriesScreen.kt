@@ -167,6 +167,20 @@ class SeriesViewModel(private val c: AppContainer, val id: Long) : ViewModel() {
             }
         }
     }
+
+    /** Mark every chapter up to [ch] read, for catching up on a series. */
+    fun markReadThrough(ch: Chapter) {
+        val d = _state.value.detail ?: return
+        viewModelScope.launch {
+            try {
+                val r = c.repository.markReadThrough(d, ch)
+                _state.update { it.copy(message = "read through ch ${formatChapterNumber(ch.number)} · +${r.marked}") }
+                load()
+            } catch (e: Exception) {
+                _state.update { it.copy(message = "! ${errorText(e)}") }
+            }
+        }
+    }
 }
 
 @Composable
@@ -215,7 +229,12 @@ fun SeriesScreen(vm: SeriesViewModel, onBack: () -> Unit, onRead: (Long) -> Unit
                 )
             }
             items(newestFirst, key = { it.id }) { ch ->
-                ChapterRow(ch, onClick = { onRead(ch.id) }, onLongClick = { vm.toggleRead(ch) })
+                ChapterRow(
+                    ch,
+                    onClick = { onRead(ch.id) },
+                    onToggleRead = { vm.toggleRead(ch) },
+                    onReadThrough = { vm.markReadThrough(ch) },
+                )
             }
             item(key = "bottom") { Spacer(Modifier.windowInsetsBottomHeight(WindowInsets.navigationBars)) }
         }
@@ -325,33 +344,61 @@ private fun Meta(key: String, value: String) {
 
 @OptIn(ExperimentalFoundationApi::class)
 @Composable
-private fun ChapterRow(ch: Chapter, onClick: () -> Unit, onLongClick: () -> Unit) {
+private fun ChapterRow(
+    ch: Chapter,
+    onClick: () -> Unit,
+    onToggleRead: () -> Unit,
+    onReadThrough: () -> Unit,
+) {
     val c = MaterialTheme.colorScheme
-    Row(
-        Modifier
-            .fillMaxWidth()
-            .combinedClickable(onClick = onClick, onLongClick = onLongClick)
-            .alpha(if (ch.read) READ_ALPHA else 1f)
-            .padding(horizontal = 12.dp, vertical = 10.dp),
-        verticalAlignment = Alignment.CenterVertically,
-    ) {
-        Box(Modifier.size(6.dp).background(if (ch.read) c.surfaceVariant else c.primary))
-        Text(
-            formatChapterNumber(ch.number).padStart(5),
-            style = MaterialTheme.typography.bodyMedium,
-            color = c.onBackground,
-            modifier = Modifier.padding(start = 8.dp),
-        )
-        Text(
-            ch.title ?: "",
-            style = MaterialTheme.typography.bodySmall,
-            color = c.onSurface,
-            maxLines = 1,
-            overflow = TextOverflow.Ellipsis,
-            modifier = Modifier.weight(1f).padding(horizontal = 10.dp),
-        )
-        ch.releasedAt?.let {
-            Text(it.take(10), style = MaterialTheme.typography.labelSmall, color = c.onSurfaceVariant)
+    var menu by remember { mutableStateOf(false) }
+    Box {
+        Row(
+            Modifier
+                .fillMaxWidth()
+                .combinedClickable(onClick = onClick, onLongClick = { menu = true })
+                .alpha(if (ch.read) READ_ALPHA else 1f)
+                .padding(horizontal = 12.dp, vertical = 10.dp),
+            verticalAlignment = Alignment.CenterVertically,
+        ) {
+            Box(Modifier.size(6.dp).background(if (ch.read) c.surfaceVariant else c.primary))
+            Text(
+                formatChapterNumber(ch.number).padStart(5),
+                style = MaterialTheme.typography.bodyMedium,
+                color = c.onBackground,
+                modifier = Modifier.padding(start = 8.dp),
+            )
+            Text(
+                ch.title ?: "",
+                style = MaterialTheme.typography.bodySmall,
+                color = c.onSurface,
+                maxLines = 1,
+                overflow = TextOverflow.Ellipsis,
+                modifier = Modifier.weight(1f).padding(horizontal = 10.dp),
+            )
+            ch.releasedAt?.let {
+                Text(it.take(10), style = MaterialTheme.typography.labelSmall, color = c.onSurfaceVariant)
+            }
+        }
+        DropdownMenu(
+            expanded = menu,
+            onDismissRequest = { menu = false },
+            shape = RectangleShape,
+            containerColor = c.surfaceVariant,
+        ) {
+            DropdownMenuItem(
+                text = { Text(if (ch.read) "mark unread" else "mark read", style = MaterialTheme.typography.bodyMedium) },
+                onClick = { menu = false; onToggleRead() },
+            )
+            DropdownMenuItem(
+                text = {
+                    Text(
+                        "mark read up to ch ${formatChapterNumber(ch.number)}",
+                        style = MaterialTheme.typography.bodyMedium,
+                    )
+                },
+                onClick = { menu = false; onReadThrough() },
+            )
         }
     }
 }
